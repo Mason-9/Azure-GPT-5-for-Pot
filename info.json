@@ -1,10 +1,17 @@
 {
-  "id": "plugin.com.pot-app.lingva",
+  "id": "plugin.com.pot-app.azure_gpt5",
   "plugin_type": "translate",
   "icon": "lingva.svg",
-  "display": "Lingva",
-  "homepage": "https://github.com/pot-app/pot-app-translate-plugin-template",
-  "needs": [{ "key": "requestPath", "display": "请求地址" }],
+  "display": "azure_gpt5",
+  "homepage": "https://github.com/Mason-9/Azure-GPT-5-for-Pot",
+   "needs": [
+    { "key": "endpoint",     "display": "Endpoint（例如：https://your-resource.openai.azure.com）", "type": "input" },
+    { "key": "apiKey",       "display": "API Key",                         "type": "input" },
+    { "key": "deployment",   "display": "Deployment 名称",                  "type": "input" },
+    { "key": "apiVersion",   "display": "API Version（默认 2024-12-01-preview）", "type": "input" },
+    { "key": "systemPrompt", "display": "系统指令（System Prompt）",        "type": "input" },
+    { "key": "temperature",  "display": "Temperature（0~2，默认 0.2）",     "type": "input" }
+  ],
   "language": {
     "auto": "auto",
     "zh_cn": "zh",
