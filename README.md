@@ -1,5 +1,7 @@
 # Pot-App 翻译插件模板仓库 (以 [Lingva](https://github.com/TheDavidDelta/lingva-translate) 为例)
 
+# 本仓库开发中
+
 ### 此仓库为模板仓库，编写插件时可以直接由此仓库创建插件仓库
 
 ## 插件编写指南
