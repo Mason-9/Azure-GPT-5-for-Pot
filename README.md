@@ -1,103 +1,142 @@
-# Pot-App 翻译插件模板仓库 (以 [Lingva](https://github.com/TheDavidDelta/lingva-translate) 为例)
+# Azure GPT-5 for Pot 🧩
 
-# 本仓库开发中
+解决问题：当前Pot不支持Azure的GPT5系列，本插件解决了这一问题
+ 特点：**零内置提示词**、支持 **System/User 双模板**、占位符 **`$text $from $to $detect`**、自动处理 **temperature 400** 重试。
 
-### 此仓库为模板仓库，编写插件时可以直接由此仓库创建插件仓库
+------
 
-## 插件编写指南
+## 🚀 快速上手
 
-### 1. 插件仓库创建
+1. 把本插件放到 Pot 的插件目录并启用（`azure_gpt5`）。
+   - 方法1：直接下载plugin.com.pot-app.azure_gpt5.potext使用
+   - 方法2：[Releases](https://github.com/Mason-9/Azure-GPT-5-for-Pot/releases)中自行下载
+   - 注意插件的后缀是potext
+2. 在插件设置里，按下面的表格填写你的 Azure 配置。
+3. 写好你的 System/User Prompt 模板（支持占位符）。
+4. 保存后在 Pot 中选用该引擎开始翻译。
 
-- 以此仓库为模板创建一个新的仓库
-- 仓库名为 `pot-app-translate-plugin-<插件名>`，例如 `pot-app-translate-plugin-lingva`
+------
 
-### 2. 插件信息配置
+## ⚙️ 字段填写对照表
 
-编辑 `info.json` 文件，修改以下字段：
+> 示例配置：
+>
+> ```
+> toml复制编辑endpoint  = "https://<your_resource_name>.cognitiveservices.azure.com/"
+> model_name       = "gpt-5-mini"
+> deployment       = "gpt-5-mini-20250809"
+> subscription_key = "<your-api-key>"
+> api_version      = "2024-12-01-preview"
+> ```
 
-- `id`：插件唯一 id，必须以`plugin`开头，例如 `plugin.com.pot-app.lingva`
-- `homepage`: 插件主页，填写你的仓库地址即可，例如 `https://github.com/pot-app/pot-app-translate-plugin-template`
-- `display`: 插件显示名称，例如 `Lingva`
-- `icon`: 插件图标，例如 `lingva.svg`
-- `needs`: 插件依赖，一个数组，每个依赖为一个对象，包含以下字段：
-  - `key`: 依赖 key，对应该项依赖在配置文件中的名称，例如 `requestPath`
-  - `display`: 依赖显示名称，对应用户显示的名称，例如 `请求地址`
-  - `type`: 组件类型 `input` | `select`
-  - `options`: 选项列表(仅 select 组件需要)，例如 `{"engine_a":"Engina A","engine_b":"Engina B"}`
-- `language`: 插件支持的语言映射，将 pot 的语言代码和插件发送请求时的语言代码一一对应
+在 **插件设置** 中按下列方式填写：
 
-### 3. 插件编写
+| 插件字段（UI）                    | 该填什么              | 示例/格式                                                   | 说明                                                         |
+| --------------------------------- | --------------------- | ----------------------------------------------------------- | ------------------------------------------------------------ |
+| **Endpoint**                      | 你的 Azure 资源终结点 | `https://<your_resource_name>.cognitiveservices.azure.com/` | 需要 **https + 域名**，末尾斜杠可有可无（插件会自动处理）。  |
+| **API Key**                       | `subscription_key`    | `xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`                          | Azure 资源的密钥。                                           |
+| **Deployment 名称**               | `deployment`          | `gpt-5-mini-20250809`                                       | **Azure 部署名**（不是模型名）。真正决定调用的是它。         |
+| **API Version**                   | `api_version`         | `2024-12-01-preview`                                        | 与你资源/地区可用版本一致。默认为此版本。                    |
+| **Model（可选）**                 | `model_name`          | `gpt-5-mini`                                                | 可留空。多数情况下 **Azure 只看 deployment**。仅当你的网关/代理需要 `model` 字段时再填。 |
+| **System Prompt**                 | 你的系统提示词模板    | 见下方示例                                                  | 支持占位符；为空则不发送 system 消息。                       |
+| **User Prompt**                   | 你的用户提示词模板    | 见下方示例                                                  | 支持占位符；为空则不发送 user 消息。                         |
+| **Max Completion Tokens（可选）** | 响应 token 上限       | `512`                                                       | 对应 `max_completion_tokens`。留空则不传。                   |
+| **Temperature（建议留空）**       | 采样温度              | *留空*                                                      | GPT-5 系列目前只支持默认值。若你误填导致 400，本插件会自动移除后重试。 |
 
-编辑 `main.js` 实现 `translate` 函数
 
-#### 输入参数
 
-```javascript
-// config: config map
-// detect: detected source language
-// setResult: function to set result text
-// utils: some tools
-//     http: tauri http module
-//     readBinaryFile: function
-//     readTextFile: function
-//     Database: tauri Database class
-//     CryptoJS: CryptoJS module
-//     cacheDir: cache dir path
-//     pluginDir: current plugin dir 
-//     osType: "Windows_NT" | "Darwin" | "Linux"
-async function translate(text, from, to, options) {
-  const { config, detect, setResult, utils } = options;
-  const { http, readBinaryFile, readTextFile, Database, CryptoJS, run, cacheDir, pluginDir, osType } = utils;
-  const { fetch, Body } = http;
-}
+------
+
+## 🧠 Prompt 模板与占位符
+
+插件不自带指令，你完全掌控提示词。支持的占位符：
+
+- **`$text`**：待翻译文本
+- **`$from`**：源语言（当 Pot 不是自动检测时）
+- **`$to`**：目标语言
+- **`$detect`**：检测到的源语言（当 Pot 使用“自动”时）
+
+> ✨ 行为说明
+>
+> - 我们会把 **System** 消息（若填写）放在前面，再放 **User** 消息（若填写）。
+> - **如果两份模板都没有出现 `$text`**，插件会 **额外** 把原文作为一条 `user` 消息发送，避免漏传文本。
+
+### 示例 1：常规翻译
+
+**System Prompt**
+
+```
+sql
+
+
+复制编辑
+You are a professional translation engine. Keep meaning accurate and natural.
 ```
 
-#### 返回值
+**User Prompt**
 
-```javascript
-// 文本翻译直接返回字符串
-return "result";
-// 流式输出使用options中的setResult函数
-setResult("result");
+```
+nginx复制编辑Translate from "{$from || $detect}" to "$to". Only output the translation.
+
+$text
 ```
 
-词典返回 json 示例：
+### 示例 2：带术语/风格
 
-```json
-{
-  "pronunciations": [
-    {
-      "region": "", // 地区
-      "symbol": "", // 音标
-      "voice": [u8] // 语音字节数组
-    }
-  ],
-  "explanations": [
-    {
-      "trait": "", // 词性
-      "explains": [""] // 释义
-    }
-  ],
-  "associations": [""], // 联想/变形
-  "sentence": [
-    {
-      "source": "", // 原文
-      "target": "" // 译文
-    }
-  ]
-}
+**System Prompt**
+
+```
+vbnet
+
+
+复制编辑
+You follow the client's style guide strictly: concise, fluent, no machine tone.
 ```
 
-### 4. 打包 pot 插件
+**User Prompt**
 
-1. 将 `main.js` 文件和 `info.json` 以及图标文件压缩为 zip 文件。
+```
+vbnet复制编辑Language: $to
+Domain: software localization
+Constraints: keep markdown and punctuation.
 
-2. 将文件重命名为`<插件id>.potext`，例如`plugin.com.pot-app.lingva.potext`,即可得到 pot 需要的插件。
+$text
+```
 
-## 自动编译打包
+> 💡 Pot 一些 UI 版本不渲染多行文本框，但本插件支持在输入框中写 `\n` 作为换行，或直接粘贴多行内容（我们会自动处理）。
 
-本仓库配置了 Github Actions，可以实现推送后自动编译打包插件。
+------
 
-每次将仓库推送到 GitHub 之后 actions 会自动运行，将打包好的插件上传到 artifact，在 actions 页面可以下载
+## 🔧 进阶选项
 
-每次提交 Tag 之后，actions 会自动运行，将打包好的插件上传到 release，在 release 页面可以下载打包好的插件
+- **Max Completion Tokens**：限制响应长度，防止过长输出或控费。
+- **Temperature**：请保持 **空**。如果误填导致 `Unsupported value: 'temperature'…` 的 400 错误，插件会自动去掉并重试，但为了干净的日志，建议一开始就留空。
+
+------
+
+## 🐞 故障排查
+
+- **400: unsupported_value temperature**
+   留空 Temperature。插件已内置重试逻辑，但建议直接不填。
+- **401/403**
+   检查 API Key 是否正确、资源是否允许此版本/部署，或是否跨区域。
+- **404**
+   部署名不对或资源名拼写错误。
+- **超时/网络问题**
+   需要代理的环境，请确保系统/应用层代理设置正确。
+
+------
+
+## 🔒 安全提示
+
+- API Key 仅用于直连你的 Azure 资源；请勿外泄。
+- 有需要时你可以在 Azure 门户随时 **轮换密钥**。
+
+------
+
+## 📝 许可证 & 致谢
+
+- 本插件使用 Azure OpenAI **Chat Completions** 接口。
+- 感谢 Pot 提供的插件接口能力。
+
+有问题/改进建议，欢迎在仓库提交 Issue/PR！🥳
