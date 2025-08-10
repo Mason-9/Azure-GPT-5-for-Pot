@@ -5,17 +5,30 @@
   "display": "azure_gpt5",
   "homepage": "https://github.com/Mason-9/Azure-GPT-5-for-Pot",
   "needs": [
-    { "key": "endpoint",       "display": "Endpoint（格式形如:https://<your_resource_name>.cognitiveservices.azure.com/）", "type": "input" },
-    { "key": "apiKey",         "display": "API Key",                              "type": "input" },
-    { "key": "deployment",     "display": "Deployment 名称",                       "type": "input" },
-    { "key": "apiVersion",     "display": "API Version（默认 2024-12-01-preview）", "type": "input" },
-    { "key": "model",          "display": "Model（可选）",                         "type": "input" },
+    {
+      "key": "endpoint",
+      "display": "Endpoint",
+      "type": "input",
+      "placeholder": "https://<your_resource_name>.cognitiveservices.azure.com"
+    },
+    { "key": "apiKey",        "display": "API Key",                  "type": "input" },
+    { "key": "deployment",    "display": "Deployment 名称",           "type": "input" },
+    { "key": "apiVersion",    "display": "API Version（默认 2024-12-01-preview）", "type": "input" },
+    { "key": "model",         "display": "Model（可选）",             "type": "input" },
 
-    { "key": "systemTemplate", "display": "System Prompt（支持 $text $from $to $detect）", "type": "textarea" },
-    { "key": "userTemplate",   "display": "User Prompt（支持 $text $from $to $detect）",   "type": "textarea" },
+    {
+      "key": "systemTemplate",
+      "display": "System Prompt（支持 $text $from $to $detect，可用 \\n 换行）",
+      "type": "input"
+    },
+    {
+      "key": "userTemplate",
+      "display": "User Prompt（支持 $text $from $to $detect，可用 \\n 换行）",
+      "type": "input"
+    },
 
-    { "key": "maxTokens",      "display": "Max Completion Tokens（可选）",          "type": "input" },
-    { "key": "temperature",    "display": "Temperature（现阶段请留空；GPT5-系列目前只支持默认值）", "type": "input" }
+    { "key": "maxTokens",     "display": "Max Completion Tokens（可选）", "type": "input" },
+    { "key": "temperature",   "display": "Temperature（建议留空；GPT-5 仅支持默认值）", "type": "input" }
   ],
   "language": {
     "auto": "auto",

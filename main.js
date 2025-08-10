@@ -5,7 +5,7 @@
 async function translate(text, from, to, options) {
   const { config, detect, utils } = options;
 
-  // HTTP
+  // HTTP 适配
   const fetch =
     (utils?.http && utils.http.fetch) ||
     utils?.tauriFetch ||
@@ -23,12 +23,22 @@ async function translate(text, from, to, options) {
   const deployment = (config?.deployment || "").trim();
   const model      = (config?.model || "").trim(); // 可选
 
-  // 新：两个大文本框
-  const sysTpl  = (config?.systemTemplate || "").trim();
-  const userTpl = (config?.userTemplate   || "").trim();
+  // 两个大文本（Pot 当前不渲染 textarea，因此用 input + \n 转换）
+  const sysTplRaw  = (config?.systemTemplate || "").trim();
+  const userTplRaw = (config?.userTemplate   || "").trim();
 
-  const maxTokens = (config?.maxTokens === undefined || config?.maxTokens === "")
-    ? undefined : Number(config.maxTokens);
+  // 允许用户在单行里写 \n；也兼容真实多行粘贴
+  const normalizeMultiline = (s) =>
+    String(s || "").replace(/\r\n/g, "\n").replace(/\\n/g, "\n");
+
+  const sysTpl  = normalizeMultiline(sysTplRaw);
+  const userTpl = normalizeMultiline(userTplRaw);
+
+  // Max tokens
+  const maxTokens =
+    (config?.maxTokens === undefined || config?.maxTokens === "")
+      ? undefined
+      : Number(config.maxTokens);
 
   // temperature：留空不传
   let temperature = config?.temperature;
@@ -62,20 +72,23 @@ async function translate(text, from, to, options) {
   const filledSys  = sysTpl  ? fill(sysTpl)  : "";
   const filledUser = userTpl ? fill(userTpl) : "";
 
-  // messages 组装：按顺序 system -> user
+  // 组装 messages：按顺序 system -> user
   const messages = [];
   if (filledSys)  messages.push({ role: "system", content: filledSys });
   if (filledUser) messages.push({ role: "user",   content: filledUser });
 
-  // 若两个模板都没有包含 $text，则补一条原文
+  // 若两个模板都没包含 $text，则额外把原文作为一条 user 消息
   const templatesContainText =
     (/\$text\b/.test(sysTpl) || /\$text\b/.test(userTpl));
   if (!templatesContainText) {
     messages.push({ role: "user", content: String(text ?? "") });
   }
 
-  const url = `${endpoint}/openai/deployments/${encodeURIComponent(deployment)}/chat/completions?api-version=${encodeURIComponent(apiVersion)}`;
+  const url =
+    `${endpoint}/openai/deployments/${encodeURIComponent(deployment)}` +
+    `/chat/completions?api-version=${encodeURIComponent(apiVersion)}`;
 
+  // payload：只在有值时带字段
   const basePayload = {
     messages,
     ...(model ? { model } : {}),
@@ -93,7 +106,10 @@ async function translate(text, from, to, options) {
       body: Body.json(payload)
     });
     if (!res.ok) {
-      const detail = typeof res?.data === "string" ? res.data : JSON.stringify(res?.data || {}, null, 2);
+      const detail =
+        typeof res?.data === "string"
+          ? res.data
+          : JSON.stringify(res?.data || {}, null, 2);
       throw `Http Request Error\nHttp Status: ${res.status}\n${detail}`;
     }
     return res.data;
@@ -104,6 +120,7 @@ async function translate(text, from, to, options) {
     data = await call(basePayload);
   } catch (e) {
     const msg = String(e);
+    // 若因 temperature 不被支持导致 400，去掉 temperature 再试一次
     if (/param"\s*:\s*"temperature"/i.test(msg) || /'temperature'/.test(msg)) {
       const { temperature: _t, ...withoutTemp } = basePayload;
       data = await call(withoutTemp);
